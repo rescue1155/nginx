@@ -3,8 +3,16 @@ nginx version: nginx/1.18.0 (Ubuntu)
 Reverse proxy and cache server with 1GB of cache size and cache RAM use of 10MB
 
 MISS and HIT checked
------
+-----------
 
+XenForo settings
+
+$config['externalDataUrl'] = function($externalPath, $canonical)
+{
+   return 'https://xftest.s3.eu-west-2.amazonaws.com/data/' . $externalPath;
+};
+
+-------------
 
 
 proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=REMOTE_CACHE:10m max_size=1g inactive=60m use_temp_path=off;
