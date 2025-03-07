@@ -1,0 +1,88 @@
+nginx version: nginx/1.18.0 (Ubuntu)
+
+Reverse proxy and cache server with 1GB of cache size and cache RAM use of 10MB
+
+MISS and HIT checked
+-----
+
+
+
+proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=REMOTE_CACHE:10m max_size=1g inactive=60m use_temp_path=off;
+
+
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+        # SSL configuration
+        #
+        # listen 443 ssl default_server;
+        # listen [::]:443 ssl default_server;
+
+        root /var/www/html;
+
+        # Add index.php to the list if you are using PHP
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name _;
+
+
+#       location / {
+#               try_files $uri $uri/ =404;
+#       }
+
+
+        location /data/ {
+            #alias /var/www/html/data;  # Local path for internal_data
+            root /var/www/html;
+            try_files $uri @fetch_remote;
+        }
+
+        location @fetch_remote {
+            proxy_pass https://playerpuff.com;
+            resolver 8.8.8.8 ipv6=off;
+
+            proxy_ssl_server_name on;
+            proxy_ssl_protocols TLSv1.2 TLSv1.3;
+            proxy_ssl_verify off;
+
+            proxy_set_header Host playerpuff.com;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Accept-Encoding "";
+
+
+            # Enable caching
+            proxy_cache REMOTE_CACHE;
+            proxy_cache_valid 200 302 30m;  # Cache 200 and 302 responses for 30 minutes
+            proxy_cache_valid 404 10m;       # Cache 404 responses for 10 minutes
+            proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+            proxy_cache_lock on;
+            add_header X-Cache $upstream_cache_status;
+
+
+        }
+
+        location / {
+                try_files $uri $uri/ =404;
+        }
+
+        # pass PHP scripts to FastCGI server
+        #
+        #location ~ \.php$ {
+        #       include snippets/fastcgi-php.conf;
+        #
+        #       # With php-fpm (or other unix sockets):
+        #       fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+        #       # With php-cgi (or other tcp sockets):
+        #       fastcgi_pass 127.0.0.1:9000;
+        #}
+
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #       deny all;
+        #}
+}
